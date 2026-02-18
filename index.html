@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="description" content="DayPulse — Tu dosis diaria de inspiración y clima" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DayPulse" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <title>DayPulse</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #1a1a1a;
+      --accent: #f0a500;
+      --accent-light: #ffc940;
+      --text: #f0ece4;
+      --text-muted: #7a7570;
+      --border: #222222;
+      --success: #4caf50;
+      --error: #e53935;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* NOISE TEXTURE OVERLAY */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* LAYOUT */
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .logo span { color: var(--accent); }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .offline-badge {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--accent);
+      background: rgba(240, 165, 0, 0.1);
+      border: 1px solid rgba(240, 165, 0, 0.3);
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .offline-badge.visible { display: flex; }
+
+    .offline-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* INSTALL BUTTON */
+    #install-btn {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.5rem 1.25rem;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      letter-spacing: 0.02em;
+    }
+
+    #install-btn.visible { display: flex; }
+    #install-btn:hover { background: var(--accent-light); transform: translateY(-1px); }
+
+    /* DATE STRIP */
+    .date-strip {
+      font-size: 0.8rem;
+      font-weight: 300;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 3.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.1s;
+    }
+
+    /* QUOTE SECTION */
+    .quote-section {
+      margin-bottom: 4rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.2s;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+    }
+
+    .quote-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .quote-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    /* Language toggle */
+    .lang-toggle {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.35rem 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      letter-spacing: 0.04em;
+    }
+
+    .lang-btn.active {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .lang-btn:not(.active):hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    /* Category select */
+    .cat-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s, color 0.2s;
+      max-width: 180px;
+    }
+
+    .cat-select:hover, .cat-select:focus {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .cat-select option {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .quote-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 12px;
+      padding: 2.5rem 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .quote-card::before {
+      content: '"';
+      position: absolute;
+      top: -0.5rem;
+      right: 1.5rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 10rem;
+      color: rgba(240,165,0,0.05);
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .quote-text {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1.3rem, 3vw, 1.9rem);
+      line-height: 1.5;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .quote-author {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+    }
+
+    .quote-author span {
+      color: var(--accent);
+      margin-right: 0.5rem;
+    }
+
+    .quote-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.5rem 1.25rem;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(240,165,0,0.05);
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    /* WEATHER SECTION */
+    .weather-section {
+      margin-bottom: 4rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.35s;
+    }
+
+    .weather-setup {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .weather-setup p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      line-height: 1.6;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.65rem 1.75rem;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); }
+
+    .weather-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 600px) {
+      .weather-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .weather-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .weather-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .weather-card.main {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      padding: 2rem;
+    }
+
+    @media (min-width: 600px) {
+      .weather-card.main { grid-column: span 2; }
+    }
+
+    .weather-icon {
+      font-size: 3.5rem;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .weather-card.main .weather-icon {
+      font-size: 4.5rem;
+      margin-bottom: 0;
+      margin-right: 1.5rem;
+    }
+
+    .weather-temp {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 3rem;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .weather-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      text-transform: capitalize;
+    }
+
+    .weather-location {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .weather-stat-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .weather-stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .weather-stat-unit {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* SAVED QUOTES */
+    .saved-section {
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.5s;
+    }
+
+    .saved-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .saved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .saved-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .saved-item:hover { border-color: var(--border); }
+
+    .saved-item-text {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .saved-item-author {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+    }
+
+    .saved-item-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.2rem;
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+
+    .saved-item-remove:hover { color: var(--error); }
+
+    .empty-saved {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 2rem;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+
+    /* LOADING */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-text { height: 1.5rem; margin-bottom: 0.75rem; }
+    .skeleton-text.lg { height: 2.5rem; }
+    .skeleton-text.sm { height: 1rem; width: 40%; }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(calc(100% + 2rem));
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      z-index: 100;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--success); color: var(--success); }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* FOOTER */
+    footer {
+      margin-top: 5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.7s;
+    }
+
+    footer p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .weather-error {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="logo">Day<span>Pulse</span></div>
+    <div class="header-actions">
+      <div class="offline-badge" id="offline-badge">
+        <div class="offline-dot"></div>
+        Sin conexión
+      </div>
+      <button id="install-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Instalar App
+      </button>
+    </div>
+  </header>
+
+  <div class="date-strip" id="date-strip">—</div>
+
+  <!-- QUOTE SECTION -->
+  <section class="quote-section">
+    <div class="quote-section-header">
+      <div class="section-label" style="margin-bottom:0">✦ Inspiración del día</div>
+      <div class="quote-controls">
+        <!-- Language toggle -->
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-es" onclick="setLang('es')">🇪🇸 ES</button>
+          <button class="lang-btn" id="lang-en" onclick="setLang('en')">🇬🇧 EN</button>
+        </div>
+        <!-- Category selector -->
+        <select id="cat-select" class="cat-select" onchange="onCatChange()">
+          <option value="">Todas las categorías</option>
+        </select>
+      </div>
+    </div>
+    <div class="quote-card" id="quote-card">
+      <div class="skeleton skeleton-text lg"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-text sm"></div>
+    </div>
+  </section>
+
+  <!-- WEATHER SECTION -->
+  <section class="weather-section">
+    <div class="section-label">✦ Estado del tiempo</div>
+    <div id="weather-container">
+      <div class="weather-setup">
+        <p>Activa tu ubicación para ver el clima en tiempo real.</p>
+        <button class="btn-primary" onclick="requestWeather()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;margin-right:6px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Obtener mi clima
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAVED QUOTES -->
+  <section class="saved-section">
+    <div class="saved-header">
+      <div class="section-label" style="margin-bottom:0">✦ Frases guardadas</div>
+      <button class="btn" id="clear-btn" onclick="clearSaved()" style="display:none">Limpiar todo</button>
+    </div>
+    <div id="saved-list"></div>
+  </section>
+
+  <footer>
+    <p>DayPulse — PWA con <a href="https://www.positive-api.online" target="_blank">Positive API</a> & <a href="https://open-meteo.com" target="_blank">Open-Meteo</a></p>
+    <p id="cache-status" style="font-size:0.72rem"></p>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── UTILITIES ────────────────────────────────────────────────────────────────
+
+const $ = id => document.getElementById(id);
+
+function showToast(msg, type = '') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2800);
+}
+
+function formatDate() {
+  const now = new Date();
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  return now.toLocaleDateString('es-ES', opts);
+}
+
+// ─── OFFLINE DETECTION ────────────────────────────────────────────────────────
+
+function updateOnlineStatus() {
+  const badge = $('offline-badge');
+  if (!navigator.onLine) badge.classList.add('visible');
+  else badge.classList.remove('visible');
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ─── DATE ─────────────────────────────────────────────────────────────────────
+
+$('date-strip').textContent = formatDate();
+
+// ─── LOCAL STORAGE ────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'daypulse_saved';
+const WEATHER_KEY = 'daypulse_weather';
+const QUOTE_KEY   = 'daypulse_last_quote';
+
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+}
+
+function saveQuote(q) {
+  const saved = getSaved();
+  if (saved.find(s => s.content === q.content)) { showToast('Ya guardaste esta frase'); return; }
+  saved.unshift(q);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 30)));
+  renderSaved();
+  showToast('Frase guardada ✓', 'success');
+}
+
+function removeSaved(idx) {
+  const saved = getSaved();
+  saved.splice(idx, 1);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+  renderSaved();
+}
+
+function clearSaved() {
+  localStorage.removeItem(STORAGE_KEY);
+  renderSaved();
+  showToast('Lista limpiada');
+}
+
+function renderSaved() {
+  const saved = getSaved();
+  const list = $('saved-list');
+  const clearBtn = $('clear-btn');
+  clearBtn.style.display = saved.length ? 'flex' : 'none';
+
+  if (!saved.length) {
+    list.innerHTML = '<div class="empty-saved">Aún no has guardado ninguna frase. <br>Haz clic en "Guardar" para empezar.</div>';
+    return;
+  }
+
+  list.innerHTML = saved.map((q, i) => `
+    <div class="saved-item">
+      <div>
+        <div class="saved-item-text">"${escapeHtml(q.content)}"</div>
+        <div class="saved-item-author">— ${escapeHtml(q.author)}</div>
+      </div>
+      <button class="saved-item-remove" onclick="removeSaved(${i})" title="Eliminar">✕</button>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(t) {
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── POSITIVE-API.ONLINE ──────────────────────────────────────────────────────
+// Base: https://www.positive-api.online
+// Endpoints usados:
+//   /phrase/esp?category_id=X  → frase aleatoria en español (con filtro opcional)
+//   /phrase?category_id=X      → frase aleatoria en inglés (con filtro opcional)
+//   /categories                → lista de categorías
+
+const POSITIVE_API = 'https://www.positive-api.online';
+
+let currentQuote  = null;
+let currentLang   = 'es';   // 'es' | 'en'
+let currentCatId  = '';     // '' = todas
+
+// ── Language toggle ────────────────────────────────────────────────────────
+function setLang(lang) {
+  currentLang = lang;
+  currentCatId = '';                       // reset categoría al cambiar idioma
+  $('cat-select').value = '';
+  $('lang-es').classList.toggle('active', lang === 'es');
+  $('lang-en').classList.toggle('active', lang === 'en');
+  loadCategories();                        // recarga categorías del idioma
+  fetchQuote();
+}
+
+function onCatChange() {
+  currentCatId = $('cat-select').value;
+  fetchQuote();
+}
+
+// ── Load categories into <select> ─────────────────────────────────────────
+async function loadCategories() {
+  const sel = $('cat-select');
+  sel.innerHTML = '<option value="">Todas las categorías</option>';
+  try {
+    const res = await fetch(`${POSITIVE_API}/categories`);
+    if (!res.ok) return;
+    const data = await res.json();
+    // API devuelve array de objetos con id y name / nombre
+    const cats = Array.isArray(data) ? data : (data.categories || data.data || []);
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      // campo nombre puede variar: name, nombre, category, etc.
+      opt.textContent = c.name || c.nombre || c.category || `Categoría ${c.id}`;
+      sel.appendChild(opt);
+    });
+  } catch {
+    // Si falla, dejamos sólo "Todas las categorías"
+  }
+}
+
+// ── Fetch a random quote ───────────────────────────────────────────────────
+async function fetchQuote() {
+  const card = $('quote-card');
+  card.innerHTML = `
+    <div class="skeleton skeleton-text lg"></div>
+    <div class="skeleton skeleton-text"></div>
+    <div class="skeleton skeleton-text sm"></div>
+  `;
+
+  // Build URL according to language and optional category
+  const base    = currentLang === 'es' ? `${POSITIVE_API}/phrase/esp` : `${POSITIVE_API}/phrase`;
+  const params  = currentCatId ? `?category_id=${currentCatId}` : '';
+  const url     = base + params;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Normalize response — the API may return the object directly or wrapped
+    const raw = Array.isArray(data) ? data[0] : (data.phrase || data.frase || data);
+
+    // Field names can vary: phrase/frase/content, author/autor
+    const content = raw.phrase || raw.frase || raw.content || raw.quote || '';
+    const author  = raw.author || raw.autor || raw.name   || 'Desconocido';
+    const catName = raw.category || raw.categoria || raw.category_name || '';
+
+    if (!content) throw new Error('Empty phrase');
+
+    currentQuote = { content, author, catName, lang: currentLang };
+    localStorage.setItem(QUOTE_KEY, JSON.stringify(currentQuote));
+    renderQuote(currentQuote);
+
+  } catch (err) {
+    // Fallback: cached quote
+    const cached = localStorage.getItem(QUOTE_KEY);
+    if (cached) {
+      currentQuote = JSON.parse(cached);
+      renderQuote(currentQuote, true);
+    } else {
+      // Hard-coded fallback so the UI never stays broken
+      currentQuote = {
+        content : 'El único modo de hacer un gran trabajo es amar lo que haces.',
+        author  : 'Steve Jobs',
+        catName : '',
+        lang    : 'es'
+      };
+      renderQuote(currentQuote, true);
+    }
+  }
+}
+
+// ── Render quote card ──────────────────────────────────────────────────────
+function renderQuote(q, offline = false) {
+  const card = $('quote-card');
+  const catBadge = q.catName
+    ? `<span style="
+        display:inline-block;margin-left:0.6rem;
+        font-size:0.68rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;
+        background:rgba(240,165,0,0.12);color:var(--accent);
+        padding:0.2rem 0.55rem;border-radius:20px;border:1px solid rgba(240,165,0,0.25)
+       ">${escapeHtml(q.catName)}</span>`
+    : '';
+  const cacheBadge = offline
+    ? `<small style="color:var(--text-muted);margin-left:0.5rem;font-size:0.75rem">(caché)</small>`
+    : '';
+
+  card.innerHTML = `
+    <div class="quote-text">${escapeHtml(q.content)}</div>
+    <div class="quote-author">
+      <span>—</span>${escapeHtml(q.author)}${catBadge}${cacheBadge}
+    </div>
+    <div class="quote-actions">
+      <button class="btn" onclick="fetchQuote()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Nueva frase
+      </button>
+      <button class="btn" onclick="saveCurrentQuote()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        Guardar
+      </button>
+      <button class="btn" onclick="shareQuote()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Compartir
+      </button>
+    </div>
+  `;
+}
+
+function saveCurrentQuote() { if (currentQuote) saveQuote(currentQuote); }
+
+async function shareQuote() {
+  if (!currentQuote) return;
+  const text = `"${currentQuote.content}" — ${currentQuote.author}`;
+  if (navigator.share) {
+    await navigator.share({ text, title: 'DayPulse' });
+  } else {
+    await navigator.clipboard.writeText(text);
+    showToast('Frase copiada al portapapeles ✓', 'success');
+  }
+}
+
+// ─── WEATHER API ──────────────────────────────────────────────────────────────
+
+const WMO_CODES = {
+  0:'Cielo despejado', 1:'Mayormente despejado', 2:'Parcialmente nublado',
+  3:'Nublado', 45:'Niebla', 48:'Niebla depositante',
+  51:'Llovizna ligera', 53:'Llovizna moderada', 55:'Llovizna densa',
+  61:'Lluvia ligera', 63:'Lluvia moderada', 65:'Lluvia intensa',
+  71:'Nieve ligera', 73:'Nieve moderada', 75:'Nieve intensa',
+  80:'Chubascos ligeros', 81:'Chubascos moderados', 82:'Chubascos violentos',
+  95:'Tormenta', 96:'Tormenta con granizo', 99:'Tormenta fuerte con granizo',
+};
+
+const WMO_ICONS = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️', 45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️', 61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'🌨️', 75:'❄️', 80:'🌦️', 81:'🌧️', 82:'⛈️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️',
+};
+
+async function requestWeather() {
+  const container = $('weather-container');
+  container.innerHTML = `<div class="weather-setup" style="text-align:center;padding:2rem"><div class="loading-spinner" style="margin:0 auto 1rem"></div><p style="color:var(--text-muted);font-size:0.9rem">Obteniendo tu ubicación...</p></div>`;
+
+  if (!navigator.geolocation) {
+    renderWeatherError('Tu navegador no soporta geolocalización.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+    err => {
+      const cached = localStorage.getItem(WEATHER_KEY);
+      if (cached) {
+        renderWeather(JSON.parse(cached), true);
+      } else {
+        // Default: Ciudad de México
+        fetchWeather(19.4326, -99.1332, 'Ciudad de México');
+      }
+    },
+    { timeout: 10000 }
+  );
+}
+
+async function fetchWeather(lat, lon, fallbackCity = null) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weathercode&timezone=auto&forecast_days=1`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    // Reverse geocode via nominatim
+    let city = fallbackCity;
+    if (!city) {
+      try {
+        const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+        const geoData = await geo.json();
+        city = geoData.address?.city || geoData.address?.town || geoData.address?.village || 'Tu ubicación';
+      } catch { city = 'Tu ubicación'; }
+    }
+
+    const weatherData = {
+      city,
+      temp: Math.round(data.current.temperature_2m),
+      feelsLike: Math.round(data.current.apparent_temperature),
+      humidity: data.current.relative_humidity_2m,
+      wind: Math.round(data.current.wind_speed_10m),
+      code: data.current.weathercode,
+    };
+
+    localStorage.setItem(WEATHER_KEY, JSON.stringify(weatherData));
+    renderWeather(weatherData);
+  } catch {
+    const cached = localStorage.getItem(WEATHER_KEY);
+    if (cached) renderWeather(JSON.parse(cached), true);
+    else renderWeatherError('No se pudo obtener el clima. Intenta más tarde.');
+  }
+}
+
+function renderWeather(d, offline = false) {
+  const icon = WMO_ICONS[d.code] || '🌡️';
+  const desc = WMO_CODES[d.code] || 'Clima actual';
+
+  $('weather-container').innerHTML = `
+    <div class="weather-grid">
+      <div class="weather-card main">
+        <div class="weather-icon">${icon}</div>
+        <div>
+          <div class="weather-location">${escapeHtml(d.city)}${offline ? ' (caché)' : ''}</div>
+          <div class="weather-temp">${d.temp}°</div>
+          <div class="weather-desc">${desc}</div>
+        </div>
+      </div>
+      <div class="weather-card">
+        <div class="weather-stat-label">Sensación</div>
+        <div class="weather-stat-value">${d.feelsLike}°<span class="weather-stat-unit">C</span></div>
+      </div>
+      <div class="weather-card">
+        <div class="weather-stat-label">Humedad</div>
+        <div class="weather-stat-value">${d.humidity}<span class="weather-stat-unit">%</span></div>
+      </div>
+      <div class="weather-card">
+        <div class="weather-stat-label">Viento</div>
+        <div class="weather-stat-value">${d.wind}<span class="weather-stat-unit">km/h</span></div>
+      </div>
+      <div class="weather-card" style="display:flex;align-items:center;justify-content:center;cursor:pointer;border-style:dashed" onclick="requestWeather()">
+        <span style="color:var(--text-muted);font-size:0.8rem;letter-spacing:0.05em">↻ Actualizar</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderWeatherError(msg) {
+  $('weather-container').innerHTML = `<div class="weather-error">${msg}</div>`;
+}
+
+// ─── PWA INSTALL ──────────────────────────────────────────────────────────────
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $('install-btn').classList.add('visible');
+});
+
+$('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') showToast('¡App instalada! 🎉', 'success');
+  deferredPrompt = null;
+  $('install-btn').classList.remove('visible');
+});
+
+window.addEventListener('appinstalled', () => {
+  $('install-btn').classList.remove('visible');
+  showToast('DayPulse instalada exitosamente 🎉', 'success');
+});
+
+// ─── SERVICE WORKER REGISTRATION ─────────────────────────────────────────────
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        $('cache-status').textContent = 'SW activo';
+        reg.addEventListener('updatefound', () => {
+          showToast('Nueva versión disponible — recarga la página');
+        });
+      })
+      .catch(() => $('cache-status').textContent = 'SW no disponible');
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+
+loadCategories();   // populate <select> with positive-api.online categories
+fetchQuote();
+renderSaved();
+</script>
+</body>
+</html>
